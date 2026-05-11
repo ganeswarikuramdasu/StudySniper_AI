@@ -13,6 +13,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "./config";
+import axios from "axios";
 
 // ─── Profile ───────────────────────────────────────────────
 export const updateUserProfile = async (uid, data) => {
@@ -32,13 +33,27 @@ export const saveOnboardingData = async (uid, data) => {
   });
 };
 
+const clearLocal = async (uid, collection) => {
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  try {
+    await axios.delete(`${API_BASE_URL}/clear-local/${uid}?collection=${collection || ''}`);
+    if (collection === 'studyPlan') localStorage.removeItem(`studyPlan_${uid}`);
+    if (collection === 'examPrepPlan') localStorage.removeItem(`examPrepPlan_${uid}`);
+    if (collection === 'profile') localStorage.removeItem(`onboarding_${uid}`);
+  } catch (e) {}
+};
+
 export const deleteObjective = async (uid) => {
   await deleteDoc(doc(db, "users", uid, "profile", "onboarding"));
   await deleteDoc(doc(db, "users", uid, "examPrepPlan", "current"));
+  await deleteDoc(doc(db, "users", uid, "studyPlan", "current"));
+  await deleteDoc(doc(db, "users", uid, "progress", "current"));
   await updateDoc(doc(db, "users", uid, "profile", "info"), {
     onboardingComplete: false,
     updatedAt: serverTimestamp(),
   });
+  localStorage.removeItem(`progress_${uid}`);
+  await clearLocal(uid); // Wipe everything for this user
 };
 
 export const getOnboardingData = async (uid) => {
@@ -55,19 +70,52 @@ export const saveStudyPlan = async (uid, planData) => {
 };
 
 export const getStudyPlan = async (uid) => {
-  const snap = await getDoc(doc(db, "users", uid, "studyPlan", "current"));
-  return snap.exists() ? snap.data() : null;
+  try {
+    const snap = await getDoc(doc(db, "users", uid, "studyPlan", "current"));
+    if (snap.exists()) return snap.data();
+    throw new Error("Not in Firestore");
+  } catch (err) {
+    console.warn("Firestore study plan failed, trying API fallback...");
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+    try {
+      const res = await axios.get(`${API_BASE_URL}/study-plan/${uid}`);
+      return res.data;
+    } catch (e) {
+      return null;
+    }
+  }
+};
+
+export const getExamPrepPlan = async (uid) => {
+  try {
+    const snap = await getDoc(doc(db, "users", uid, "examPrepPlan", "current"));
+    if (snap.exists()) return snap.data();
+    throw new Error("Not in Firestore");
+  } catch (err) {
+    console.warn("Firestore exam prep failed, trying API fallback...");
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+    try {
+      const res = await axios.get(`${API_BASE_URL}/exam-prep/${uid}`);
+      return res.data;
+    } catch (e) {
+      return null;
+    }
+  }
 };
 export const deleteStudyPlan = async (uid) => {
-  await deleteDoc(doc(db, "users", uid, "studyPlan", "current"));
-  // Also reset progress stats when plan is deleted
-  await setDoc(doc(db, "users", uid, "progress", "current"), {
-    preparedness: 0,
-    topicsCovered: 0,
-    studyHours: 0,
-    streak: 0,
-    updatedAt: serverTimestamp()
-  });
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  try {
+    await axios.delete(`${API_BASE_URL}/delete-study-plan/${uid}`);
+    localStorage.removeItem(`studyPlan_${uid}`);
+    localStorage.removeItem(`progress_${uid}`);
+  } catch (err) {
+    console.error("Delete Study Plan Error:", err);
+    // Fallback
+    await deleteDoc(doc(db, "users", uid, "studyPlan", "current"));
+    await deleteDoc(doc(db, "users", uid, "progress", "current"));
+    await clearLocal(uid, 'studyPlan');
+    localStorage.removeItem(`progress_${uid}`);
+  }
 };
 
 // ─── Progress ──────────────────────────────────────────────
@@ -75,10 +123,10 @@ import { arrayUnion, arrayRemove } from "firebase/firestore";
 
 export const toggleTaskCompletion = async (uid, taskId, isCompleted) => {
   const ref = doc(db, "users", uid, "progress", "current");
-  await updateDoc(ref, {
+  await setDoc(ref, {
     completedTasks: isCompleted ? arrayUnion(taskId) : arrayRemove(taskId),
     updatedAt: serverTimestamp()
-  });
+  }, { merge: true });
 };
 
 export const updateProgress = async (uid, progressData) => {

@@ -7,8 +7,8 @@ import {
 } from "lucide-react";
 import AppLayout from "../components/layout/AppLayout";
 import { useAuth } from "../context/AuthContext.jsx";
+import { onSnapshot, doc } from "firebase/firestore";
 import { db } from "../firebase/config";
-import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { deleteObjective } from "../firebase/firestore";
@@ -20,27 +20,32 @@ const ExamPrep = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPrepPlan = async () => {
-      try {
-        const snap = await getDoc(doc(db, "users", user.uid, "examPrepPlan", "current"));
-        if (snap.exists()) {
-          const data = snap.data();
-          // Safe parsing for stringified phases
-          if (data.phases && typeof data.phases === 'string') {
-            try { data.phases = JSON.parse(data.phases); } catch (e) {}
-          }
-          if (data.StrategicPhases && typeof data.StrategicPhases === 'string') {
-            try { data.StrategicPhases = JSON.parse(data.StrategicPhases); } catch (e) {}
-          }
-          setPlan(data);
+    if (!user) return;
+    
+    setLoading(true);
+    const unsubscribe = onSnapshot(doc(db, "users", user.uid, "examPrepPlan", "current"), (snapshot) => {
+      if (snapshot.exists()) {
+        const planData = snapshot.data();
+        if (planData.phases && typeof planData.phases === 'string') {
+          try { planData.phases = JSON.parse(planData.phases); } catch (e) {}
         }
-      } catch (err) {
-        toast.error("Strategy sync failed");
-      } finally {
+        if (planData.StrategicPhases && typeof planData.StrategicPhases === 'string') {
+          try { planData.StrategicPhases = JSON.parse(planData.StrategicPhases); } catch (e) {}
+        }
+        setPlan(planData);
+        setLoading(false);
+      } else {
+        const localPlan = localStorage.getItem(`examPrepPlan_${user.uid}`);
+        if (localPlan) {
+          setPlan(JSON.parse(localPlan));
+        } else {
+          setPlan(null);
+        }
         setLoading(false);
       }
-    };
-    fetchPrepPlan();
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
   const handleDelete = async () => {

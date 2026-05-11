@@ -13,6 +13,9 @@ import { getCheatSheets, deleteCheatSheet } from "../firebase/firestore";
 import axios from "axios";
 import toast from "react-hot-toast";
 
+import { onSnapshot, collection, query, orderBy } from "firebase/firestore";
+import { db } from "../firebase/config";
+
 const CheatSheets = () => {
   const { user } = useAuth();
   const [sheets, setSheets] = useState([]);
@@ -26,33 +29,45 @@ const CheatSheets = () => {
   const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
   useEffect(() => {
-    fetchSheets();
-  }, [user]);
-
-  const fetchSheets = async () => {
-    try {
-      const data = await getCheatSheets(user.uid);
-      const parsedData = data.map(sheet => {
-        let newSheet = { ...sheet };
-        // Safe parsing for all potential stringified fields
+    if (!user) return;
+    
+    setLoading(true);
+    const q = query(collection(db, "users", user.uid, "cheatsheets"), orderBy("createdAt", "desc"));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(d => {
+        const sheet = { id: d.id, ...d.data() };
+        // Robust parsing
         ['tables', 'interviewQuestions', 'formulas', 'highlights', 'keyConcepts', 'importantPoints', 'flowExplanations'].forEach(field => {
-          if (newSheet[field] && typeof newSheet[field] === 'string') {
-            try {
-              newSheet[field] = JSON.parse(newSheet[field]);
-            } catch (e) {
-              console.error(`Failed to parse ${field} JSON`, e);
-            }
+          if (sheet[field] && typeof sheet[field] === 'string') {
+            try { sheet[field] = JSON.parse(sheet[field]); } catch (e) {}
           }
         });
-        return newSheet;
+        return sheet;
       });
-      setSheets(parsedData);
-    } catch (err) {
-      toast.error("Failed to load cheat sheets");
-    } finally {
+      
+      setSheets(docs);
+      if (docs.length > 0) {
+        localStorage.setItem(`cheatsheets_${user.uid}`, JSON.stringify(docs));
+      }
+      
+      // Keep selectedSheet in sync with the new data
+      if (selectedSheet) {
+        const updated = docs.find(s => s.id === selectedSheet.id);
+        if (updated) setSelectedSheet(updated);
+      }
+
       setLoading(false);
-    }
-  };
+    }, (err) => {
+      console.error("CheatSheet Sync Error:", err);
+      // Fallback
+      const local = localStorage.getItem(`cheatsheets_${user.uid}`);
+      if (local) setSheets(JSON.parse(local));
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -60,16 +75,23 @@ const CheatSheets = () => {
     setGenerateLoading(true);
     toast.loading("Generating AI Cheat Sheet...", { id: "generate" });
     try {
-      await axios.post(`${API_BASE_URL}/generate-cheatsheet`, {
+      const response = await axios.post(`${API_BASE_URL}/generate-cheatsheet`, {
         userId: user.uid,
         content: topicName
       }, {
         timeout: 90000 
       });
+
+      // Save to local storage for instant reflection
+      const newSheet = { ...response.data, id: `local-${Date.now()}`, createdAt: { seconds: Date.now()/1000 } };
+      const updatedSheets = [newSheet, ...sheets];
+      setSheets(updatedSheets);
+      localStorage.setItem(`cheatsheets_${user.uid}`, JSON.stringify(updatedSheets));
+
       toast.success("Cheat Sheet Ready!", { id: "generate" });
       setIsCreating(false);
       setTopicName("");
-      fetchSheets();
+      // fetchSheets(); // Don't refetch, we already updated locally
     } catch (err) {
       const errorMsg = err.response?.data?.error || "Generation failed. Try a different topic.";
       toast.error(errorMsg, { id: "generate" });
@@ -136,10 +158,24 @@ const CheatSheets = () => {
               <tbody>${table.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody>
             </table>
           `).join('') : ''}
+          
           <h2>Neural Formula Network</h2>
-          <ul>${(sheet.formulas || ["No formulas identified."]).map(f => `<li>${f}</li>`).join('')}</ul>
+          <ul>${(sheet.formulas || ["No formulas identified."]).map(f => `<li>${typeof f === 'object' ? (f.formula || JSON.stringify(f)) : f}</li>`).join('')}</ul>
+          
           <h2>Process & Flow</h2>
-          <ul>${(sheet.flowExplanations || []).map(f => `<li>${f}</li>`).join('')}</ul>
+          <ul>${(sheet.flowExplanations || []).map(f => `<li>${typeof f === 'object' ? (f.explanation || JSON.stringify(f)) : f}</li>`).join('')}</ul>
+          
+          <h2>Pro Highlights</h2>
+          <ul>${(sheet.highlights || []).map(h => `<li>${typeof h === 'object' ? (h.highlight || JSON.stringify(h)) : h}</li>`).join('')}</ul>
+          
+          <h2>Interview & Exam Drills</h2>
+          ${(sheet.interviewQuestions || []).map(q => `
+            <div style="margin-bottom: 15px;">
+              <strong>Q: ${q.question}</strong><br/>
+              <span style="color: #444;">A: ${q.answer}</span>
+            </div>
+          `).join('')}
+
           <div class="footer">
             StudySniper AI • Intelligence for Scholars • Protected Neural Data
           </div>
@@ -227,25 +263,35 @@ const CheatSheets = () => {
                   </header>
                   <section className="space-y-4">
                     <div className="flex items-center gap-2 text-[var(--accent)]"><Layout size={18} /><h3 className="text-xs font-bold uppercase tracking-widest">Strategic Overview</h3></div>
-                    <p className="text-[var(--text-secondary)] text-lg leading-relaxed italic bg-[var(--bg-surface)] p-8 rounded-3xl border border-[var(--border)]">"{selectedSheet.summary}"</p>
+                    <p className="text-[var(--text-secondary)] text-lg leading-relaxed italic bg-[var(--bg-surface)] p-8 rounded-3xl border border-[var(--border)]">"{selectedSheet?.summary}"</p>
                   </section>
                   <div className="grid md:grid-cols-2 gap-8">
                      <div className="space-y-4 bg-[var(--bg-surface)] p-8 rounded-[32px] border border-[var(--border)]">
                         <div className="flex items-center gap-2 text-[var(--purple)]"><Brain size={18} /><h3 className="text-xs font-bold uppercase tracking-widest">Key Concepts</h3></div>
-                        <ul className="space-y-3">{selectedSheet.keyConcepts?.map((c, i) => (<li key={i} className="flex gap-3 text-sm text-[var(--text-secondary)]"><div className="w-1.5 h-1.5 rounded-full bg-[var(--purple)] mt-2 shrink-0" /> {c}</li>))}</ul>
+                        <ul className="space-y-3">{selectedSheet?.keyConcepts?.map((c, i) => (
+                          <li key={i} className="flex gap-3 text-sm text-[var(--text-secondary)]">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[var(--purple)] mt-2 shrink-0" /> 
+                            {typeof c === 'object' ? (c.concept || c.description || JSON.stringify(c)) : c}
+                          </li>
+                        ))}</ul>
                      </div>
                      <div className="space-y-4 bg-[var(--bg-surface)] p-8 rounded-[32px] border border-[var(--border)]">
                         <div className="flex items-center gap-2 text-[var(--blue)]"><List size={18} /><h3 className="text-xs font-bold uppercase tracking-widest">Important Points</h3></div>
-                        <ul className="space-y-3">{selectedSheet.importantPoints?.map((p, i) => (<li key={i} className="flex gap-3 text-sm text-[var(--text-secondary)]"><div className="w-1.5 h-1.5 rounded-full bg-[var(--blue)] mt-2 shrink-0" /> {p}</li>))}</ul>
+                        <ul className="space-y-3">{selectedSheet?.importantPoints?.map((p, i) => (
+                          <li key={i} className="flex gap-3 text-sm text-[var(--text-secondary)]">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[var(--blue)] mt-2 shrink-0" /> 
+                            {typeof p === 'object' ? (p.point || p.description || JSON.stringify(p)) : p}
+                          </li>
+                        ))}</ul>
                      </div>
                   </div>
-                  {selectedSheet.tables && selectedSheet.tables.length > 0 && (
+                  {selectedSheet?.tables && selectedSheet.tables.length > 0 && (
                     <section className="space-y-4">
                        <div className="flex items-center gap-2 text-[var(--amber)]"><TableIcon size={18} /><h3 className="text-xs font-bold uppercase tracking-widest">Comparative Analysis</h3></div>
                        <div className="overflow-x-auto">
                           <table className="w-full text-left border-collapse bg-[var(--bg-surface)] rounded-3xl overflow-hidden border border-[var(--border)]">
-                             <thead><tr className="bg-[var(--bg-primary)]">{selectedSheet.tables[0].header.map((h, i) => (<th key={i} className="p-6 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] border-b border-[var(--border)]">{h}</th>))}</tr></thead>
-                             <tbody>{selectedSheet.tables[0].rows.map((row, i) => (<tr key={i} className="border-b border-[var(--border)] last:border-0 hover:bg-white/5 transition-colors">{row.map((cell, j) => (<td key={j} className="p-6 text-sm text-[var(--text-secondary)]">{cell}</td>))}</tr>))}</tbody>
+                             <thead><tr className="bg-[var(--bg-primary)]">{selectedSheet.tables[0].header?.map((h, i) => (<th key={i} className="p-6 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] border-b border-[var(--border)]">{h}</th>))}</tr></thead>
+                             <tbody>{selectedSheet.tables[0].rows?.map((row, i) => (<tr key={i} className="border-b border-[var(--border)] last:border-0 hover:bg-white/5 transition-colors">{row?.map((cell, j) => (<td key={j} className="p-6 text-sm text-[var(--text-secondary)]">{cell}</td>))}</tr>))}</tbody>
                           </table>
                        </div>
                     </section>
@@ -253,16 +299,25 @@ const CheatSheets = () => {
                   <div className="grid md:grid-cols-2 gap-8">
                      <div className="space-y-4 border border-[var(--border)] p-8 rounded-[32px]">
                         <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]">Formula Network</h3>
-                        <div className="space-y-3">{selectedSheet.formulas?.map((f, i) => (<div key={i} className="text-sm font-mono bg-black/20 p-4 rounded-xl text-[var(--accent)] border border-white/5">{f}</div>))}</div>
+                        <div className="space-y-3">{selectedSheet?.formulas?.map((f, i) => (
+                          <div key={i} className="text-sm font-mono bg-black/20 p-4 rounded-xl text-[var(--accent)] border border-white/5">
+                            {typeof f === 'object' ? (f.formula || f.description || JSON.stringify(f)) : f}
+                          </div>
+                        ))}</div>
                      </div>
                      <div className="space-y-4 border border-[var(--border)] p-8 rounded-[32px]">
                         <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]">Pro Highlights</h3>
-                        <div className="space-y-3">{selectedSheet.highlights?.map((h, i) => (<div key={i} className="text-sm bg-amber-500/5 p-4 rounded-xl text-amber-500 border border-amber-500/10 flex gap-3"><Sparkles size={16} className="shrink-0" /> {h}</div>))}</div>
+                        <div className="space-y-3">{selectedSheet?.highlights?.map((h, i) => (
+                          <div key={i} className="text-sm bg-amber-500/5 p-4 rounded-xl text-amber-500 border border-amber-500/10 flex gap-3">
+                            <Sparkles size={16} className="shrink-0" /> 
+                            {typeof h === 'object' ? (h.highlight || h.description || JSON.stringify(h)) : h}
+                          </div>
+                        ))}</div>
                      </div>
                   </div>
                   <section className="space-y-6 pt-10 border-t border-[var(--border)]">
                      <div className="flex items-center gap-2 text-[var(--green)]"><MessageSquare size={18} /><h3 className="text-xs font-bold uppercase tracking-widest">Interview & Exam Drills</h3></div>
-                     <div className="grid gap-4">{selectedSheet.interviewQuestions?.map((q, i) => (<div key={i} className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border)] space-y-2"><p className="font-bold text-[var(--text-primary)]">Q: {q.question}</p><p className="text-sm text-[var(--text-secondary)] leading-relaxed">A: {q.answer}</p></div>))}</div>
+                     <div className="grid gap-4">{selectedSheet?.interviewQuestions?.map((q, i) => (<div key={i} className="bg-[var(--bg-surface)] p-6 rounded-2xl border border-[var(--border)] space-y-2"><p className="font-bold text-[var(--text-primary)]">Q: {q?.question}</p><p className="text-sm text-[var(--text-secondary)] leading-relaxed">A: {q?.answer}</p></div>))}</div>
                   </section>
                 </div>
               </motion.div>
