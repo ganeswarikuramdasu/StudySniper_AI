@@ -10,15 +10,15 @@ StudySniper AI is a premium, enterprise-grade study intelligence engine designed
 - **Framework**: React 18 + Vite (Ultra-fast HMR)
 - **Aesthetics**: Premium Glassmorphism & Cinematic Motion (Framer Motion)
 - **Styling**: Modern CSS Variables + Tailwind-ready Architecture
-- **State Management**: React Context API (Auth & Theme) + Real-time Firestore Listeners
+- **State Management**: React Context API (Auth & Theme)
 - **Icons**: Lucide React (High-density vector set)
 
 ### Backend (Neural Logic)
 - **Runtime**: Node.js + Express
 - **Security**: Helmet (CSP-Hardened), CORS-Perceptive
-- **Database**: Firebase Firestore (Real-time NoSQL with Local Persistence Fallback)
-- **Auth**: Firebase Authentication (Multi-Role Support, Password Recovery)
-- **File Processing**: Multer + Python-enhanced PDF Parsing (Vectorized Text Extraction)
+- **Database**: Firebase Firestore (Real-time NoSQL)
+- **Auth**: Firebase Authentication (Multi-Role Support)
+- **File Processing**: Multer + PDF-Parse (Vectorized Text Extraction)
 - **Mail Service**: Nodemailer (Tactical Transactional Emails)
 
 ---
@@ -26,35 +26,28 @@ StudySniper AI is a premium, enterprise-grade study intelligence engine designed
 ## 🧠 AI Engine Architecture (Multi-Provider Sync)
 
 StudySniper uses a proprietary fallback chain to bypass API rate limits and ensure peak intelligence:
-1.  **Primary**: **Groq Llama 3.3-70B** (Instant, high-speed synthesis and fast-validation checks)
-2.  **Secondary**: **Google Gemini 2.0 Flash / 1.5 Pro** (High-reasoning, large context JSON generation)
+1.  **Primary**: **Google Gemini 2.0 Flash** (High-reasoning, large context)
+2.  **Secondary**: **Groq Llama 3.3-70B** (Instant, high-speed synthesis)
 3.  **Final Fallback**: **OpenRouter (Gemini Pro/Llama 3)** (Global redundancy)
 
 ---
 
 ## 💎 Key Features
 
-### 1. Neural Syllabus Analysis & Validation Engine
-- Upload up to 10 PDFs or paste raw text.
-- **Strict Fast-Validation**: Instantly scans uploads within 1-2 seconds. Rejects out-of-bounds topics (e.g., uploading C++ for an OS exam) to prevent polluted study schedules.
+### 1. Neural Syllabus Analysis
+- Upload any PDF or paste raw text.
 - AI extracts core topics, assigns **Importance Scores (1-100)**, and identifies exam-critical concepts.
 
-### 2. Question Bank Analyzer 
-- Upload up to 5 previous years' exam papers simultaneously.
-- The AI cross-references the documents to extract the **Most Repeated Patterns** and **Frequently Asked Questions**, sorting them by frequency and significance.
-- Fully synchronized history allows you to view past analyses, or instantly wipe them from the secure backend.
+### 2. Adaptive Study Planner
+- Generate tactical 7-day schedules based on your specific exam dates and daily capacity.
+- AI prioritizes high-impact topics early to maximize retention.
 
-### 3. Adaptive Study Planner
-- Generate tactical, day-by-day schedules mapped *exactly* to the days remaining until your exam.
-- AI dynamically distributes topics, prioritizing high-impact modules and areas with low confidence early to maximize retention.
-- Pristine history deletion completely wipes your slate clean to 0% completion when generating a new path.
-
-### 4. Pro Cheat Sheets
+### 3. Pro Cheat Sheets
 - Synthesize any topic into a professional, high-density cheat sheet.
-- Includes **Comparative Analysis Tables**, **Formula Networks**, **Pro Highlights**, and **Interview/Exam Drills**.
+- Includes **Comparative Analysis Tables**, **Formula Networks**, and **Interview Drills**.
 - One-click **PDF Export** for offline revision.
 
-### 5. Neural Chat Assistant (v2.1)
+### 4. Neural Chat Assistant (v2.1)
 - 24/7 AI tutor aware of your study progress and platform features.
 - Optimized for concise, application-specific guidance.
 
@@ -74,7 +67,7 @@ npm start
 ```bash
 cd frontend
 npm install
-# Configure .env with Firebase credentials (VITE_FIREBASE_API_KEY, etc.)
+# Configure .env with Firebase credentials
 npm run dev
 ```
 
