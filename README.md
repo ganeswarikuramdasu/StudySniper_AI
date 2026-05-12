@@ -4,16 +4,22 @@ StudySniper AI is a premium, enterprise-grade study intelligence engine designed
 
 ---
 
-## 🚀 Core Infrastructure & Tech Stack
+# 🌐 Website Link
 
-### Frontend (Intelligence Interface)
+🔗 https://study-sniper.vercel.app/
+
+---
+
+# 🚀 Core Infrastructure & Tech Stack
+
+## Frontend (Intelligence Interface)
 - **Framework**: React 18 + Vite (Ultra-fast HMR)
 - **Aesthetics**: Premium Glassmorphism & Cinematic Motion (Framer Motion)
 - **Styling**: Modern CSS Variables + Tailwind-ready Architecture
 - **State Management**: React Context API (Auth & Theme)
 - **Icons**: Lucide React (High-density vector set)
 
-### Backend (Neural Logic)
+## Backend (Neural Logic)
 - **Runtime**: Node.js + Express
 - **Security**: Helmet (CSP-Hardened), CORS-Perceptive
 - **Database**: Firebase Firestore (Real-time NoSQL)
@@ -23,60 +29,90 @@ StudySniper AI is a premium, enterprise-grade study intelligence engine designed
 
 ---
 
-## 🧠 AI Engine Architecture (Multi-Provider Sync)
+# 🧠 AI Engine Architecture (Multi-Provider Sync)
 
-StudySniper uses a proprietary fallback chain to bypass API rate limits and ensure peak intelligence:
-1.  **Primary**: **Google Gemini 2.0 Flash** (High-reasoning, large context)
-2.  **Secondary**: **Groq Llama 3.3-70B** (Instant, high-speed synthesis)
-3.  **Final Fallback**: **OpenRouter (Gemini Pro/Llama 3)** (Global redundancy)
+StudySniper AI uses a proprietary fallback chain to bypass API rate limits and ensure peak intelligence:
 
----
+1. **Primary AI:** Google Gemini 2.0 Flash  
+   - High reasoning capability  
+   - Massive context window  
+   - Fast academic synthesis  
 
-## 💎 Key Features
+2. **Secondary AI:** Groq Llama 3.3-70B  
+   - Ultra-fast responses  
+   - High-speed summarization  
+   - Reliable fallback engine  
 
-### 1. Neural Syllabus Analysis
-- Upload any PDF or paste raw text.
-- AI extracts core topics, assigns **Importance Scores (1-100)**, and identifies exam-critical concepts.
-
-### 2. Adaptive Study Planner
-- Generate tactical 7-day schedules based on your specific exam dates and daily capacity.
-- AI prioritizes high-impact topics early to maximize retention.
-
-### 3. Pro Cheat Sheets
-- Synthesize any topic into a professional, high-density cheat sheet.
-- Includes **Comparative Analysis Tables**, **Formula Networks**, and **Interview Drills**.
-- One-click **PDF Export** for offline revision.
-
-### 4. Neural Chat Assistant (v2.1)
-- 24/7 AI tutor aware of your study progress and platform features.
-- Optimized for concise, application-specific guidance.
+3. **Final Fallback:** OpenRouter (Gemini Pro / Llama 3)  
+   - Global redundancy layer  
+   - Multi-model support  
+   - Maximum uptime reliability  
 
 ---
 
-## 🛠️ Installation & Setup
+# 💎 Key Features
 
-### Backend
+## 1. Neural Syllabus Analysis
+- Upload any PDF or paste raw text
+- AI extracts:
+  - Core topics
+  - Important concepts
+  - Exam-critical areas
+- Generates **Importance Scores (1–100)**
+
+---
+
+## 2. Adaptive Study Planner
+- Creates tactical study schedules
+- Supports:
+  - 7-Day Plans
+  - Custom Exam Timelines
+  - Daily Hour Allocation
+- Prioritizes high-impact topics first for maximum retention
+
+---
+
+## 3. Pro Cheat Sheets
+Generate professional high-density revision material including:
+
+- Comparative Analysis Tables
+- Formula Networks
+- Smart Summaries
+- Interview Drills
+- Key Revision Points
+
+### Export Support
+- One-click PDF Export
+- Offline revision ready
+
+---
+
+## 4. Neural Chat Assistant (v2.1)
+- 24/7 AI Tutor
+- Aware of:
+  - User progress
+  - Study history
+  - Platform features
+- Optimized for concise, accurate academic guidance
+
+---
+
+# ⚡ Platform Highlights
+
+- Multi-AI Fallback Architecture
+- Real-Time Firestore Sync
+- Secure Authentication System
+- Glassmorphism UI Experience
+- Lightning Fast Vite Frontend
+- AI-Powered Exam Preparation
+- Scalable Enterprise Structure
+
+---
+
+# 🛠️ Installation & Setup
+
+## Backend Setup
+
 ```bash
 cd backend
 npm install
-# Configure .env with Firebase, Gemini, Groq, and OpenRouter keys
-npm start
-```
-
-### Frontend
-```bash
-cd frontend
-npm install
-# Configure .env with Firebase credentials
-npm run dev
-```
-
----
-
-## 📡 Networking & Connection (Neural Tunnel)
-The project utilizes a **Vite Proxy Configuration** to route all `/api` requests through a secure local tunnel, eliminating CORS issues and local IP resolution errors between `localhost` and `127.0.0.1`.
-
----
-
-## 🛡️ License & Copyright
-© 2026 StudySniper AI. Intelligence for Scholars. All Rights Reserved.
